@@ -6,6 +6,8 @@ import { createConfig, type Config } from './config';
 import { readConfigWithEnv } from './configReader';
 import { getGitRemoteUrls } from './utils/git'; 
 import { CodeCommitter } from './codeCommitter';
+import fs from 'fs';
+import { getYYMMDDHHMMSS } from './utils/getDateAndTime';
 
 import type { Task } from './task';
 
@@ -89,6 +91,10 @@ export async function main(): Promise<void> {
     // step 4. do code commit
     const codeCommitter = new CodeCommitter(allTaskReports);
     await codeCommitter.commitAllChanges();
+
+    // step 5. save the final report to "./.fsc/finalReport.txt"
+    const yymmddhhmmss = getYYMMDDHHMMSS();
+    fs.writeFileSync("./.fsc/finalReport_" + yymmddhhmmss + ".txt", allTaskReports.join("\n"));
 }
 
 // Call the main function if this file is run directly
