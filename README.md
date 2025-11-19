@@ -63,70 +63,31 @@ Full Self Coding (FSC) is a sophisticated framework designed to automate softwar
 - **Git** (for repository operations)
 - **Bun** (recommended for package management)
 
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-org/full-self-coding.git
-   cd full-self-coding
-   ```
-
-2. **Install dependencies**
-   ```bash
-   # Using npm
-   npm install
-
-   # Or using bun (recommended)
-   bun install
-   ```
-
-3. **Build the project**
-   ```bash
-   # Using npm
-   npm run build
-
-   # Or using bun
-   bun run build
-   ```
-
-4. **Verify installation**
-   ```bash
-   bun test
-   ```
 
 ### Quick Start
 
-1. **Basic configuration**
+1. **Install bun.js on your machine**
    ```bash
-   # Create global config
-   mkdir -p ~/.config/full-self-coding
-   cat > ~/.config/full-self-coding/config.json << EOF
-   {
-     "agentType": "claude-code",
-     "anthropicAPIKey": "your-anthropic-api-key",
-     "maxDockerContainers": 5,
-     "dockerTimeoutSeconds": 300
-   }
-   EOF
+   curl -fsSL https://bun.sh/install | bash
    ```
 
-2. **Run on a repository**
+2. **Install full-self-coding package**
    ```bash
-   # Basic usage
-   node dist/main.js https://github.com/user/repo.git
+   bun install -g full-self-coding
+   ```
 
-   # With specific configuration
-   node dist/main.js https://github.com/user/repo.git \
-     --agent-type claude-code \
-     --max-containers 10 \
-     --timeout 600
+3. **Run on a repository**
+   ```bash
+   git clone https://github.com/user/repo.git
+   cd repo
+   full-self-coding
    ```
 
 ## ⚙️ Configuration
 
 ### Configuration Hierarchy
 
-FSC uses a hierarchical configuration system with the following precedence (highest to lowest):
+Full Self Coding uses a hierarchical configuration system with the following precedence (highest to lowest):
 
 1. **Environment Variables** (`FSC_*`)
 2. **Project-level Configuration** (`.fsc/config.json`)
