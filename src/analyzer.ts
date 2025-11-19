@@ -86,12 +86,19 @@ export async function analyzeCodebase(
         allCommands.push("apt-get install -y nodejs");
 
         // 3. Install gemini-cli globally if agent type is GEMINI_CLI
-        if (config.agentType === SWEAgentType.GEMINI_CLI) {
-            allCommands.push(`npm install -g @google/gemini-cli`);
+        switch (config.agentType) {
+            case SWEAgentType.GEMINI_CLI:
+                allCommands.push(`npm install -g @google/gemini-cli`);
+                break;
+            case SWEAgentType.CLAUDE_CODE:
+                allCommands.push(`npm install -g @anthropic-ai/claude-code`);
+                break;
+            case SWEAgentType.CODEX:
+                allCommands.push(`npm install -g @openai/codex`);
+                break;
+            default:
+                throw new Error(`Unsupported agent type: ${config.agentType}`);
         }
-        else if (config.agentType=== SWEAgentType.CLAUDE_CODE) {
-            allCommands.push(`npm install -g @anthropic-ai/claude-code`);
-        }   
 
 
 
