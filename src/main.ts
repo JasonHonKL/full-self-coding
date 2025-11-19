@@ -105,12 +105,19 @@ export async function main(): Promise<void> {
         }
     }
 
-    fs.writeFileSync("./.fsc/finalReport_" + yymmddhhmmss + ".txt", JSON.stringify(allTaskReports, null, 2));
+    // Save final report to ~/Library/Logs/full-self-coding directory
+    const logDir = process.env.HOME + "/Library/Logs/full-self-coding";
 
-    // also save the final report to user's home folder
-    fs.writeFileSync(process.env.HOME + "/.fsc/finalReport_" + yymmddhhmmss + ".txt", JSON.stringify(allTaskReports, null, 2));
+    // Create the directory if it doesn't exist
+    if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+    }
 
-    console.log(`Final report saved to "./.fsc/finalReport_${yymmddhhmmss}.txt"`);
+    // Write the final report
+    const reportPath = logDir + "/finalReport_" + yymmddhhmmss + ".txt";
+    fs.writeFileSync(reportPath, JSON.stringify(allTaskReports, null, 2));
+
+    console.log(`Final report saved to "${reportPath}"`);
 }
 
 // Call the main function if this file is run directly

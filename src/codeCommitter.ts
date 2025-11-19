@@ -525,6 +525,26 @@ ${backupBranch ? `Backup branch created: ${backupBranch}` : ''}`;
       error?: string;
     }>;
   }): void {
+    // Get terminal width for responsive layout
+    const getTerminalWidth = (): number => {
+      try {
+        return process.stdout.columns || 80; // Fallback to 80 if undefined
+      } catch {
+        return 80; // Safe fallback
+      }
+    };
+
+    // Helper function to create responsive lines and boxes
+    const createLine = (width: number, char: string = '─'): string => char.repeat(width);
+    const createBoxTop = (width: number): string => `┌${createLine(width - 2)}┐`;
+    const createBoxBottom = (width: number): string => `└${createLine(width - 2)}┘`;
+    const createBoxRow = (width: number, content: string, leftPad: number = 2, rightPad: number = 2): string => {
+      const innerWidth = width - leftPad - rightPad - 2; // -2 for box characters
+      const truncatedContent = content.length > innerWidth ? content.substring(0, innerWidth - 3) + '...' : content;
+      const padding = innerWidth - truncatedContent.length;
+      return `│${' '.repeat(leftPad)}${truncatedContent}${' '.repeat(padding + rightPad)}│`;
+    };
+
     // Helper function to get commit hash for a branch
     const getCommitHash = (branchName: string): string => {
       try {
@@ -547,31 +567,130 @@ ${backupBranch ? `Backup branch created: ${backupBranch}` : ''}`;
 
     // Calculate success rate
     const successRate = summary.totalTasks > 0 ? Math.round((summary.successfulTasks / summary.totalTasks) * 100) : 0;
+    const terminalWidth = Math.max(40, Math.min(200, getTerminalWidth())); // Clamp between 40-200 chars
 
-    console.log(`\n${COLORS.bright}${COLORS.bgBlue}${COLORS.white}🚀 CODECOMMITTER FINAL REPORT 🚀${COLORS.reset}`);
-    console.log(`${COLORS.cyan}══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════${COLORS.reset}\n`);
+    // Center header text
+    const headerText = '🚀 CODECOMMITTER FINAL REPORT 🚀';
+    const headerPadding = Math.max(0, (terminalWidth - headerText.length) / 2);
+    const centeredHeader = `${' '.repeat(Math.floor(headerPadding))}${headerText}${' '.repeat(Math.ceil(headerPadding))}`;
 
-    // Summary Section
+    console.log(`\n${COLORS.bright}${COLORS.bgBlue}${COLORS.white}${centeredHeader}${COLORS.reset}`);
+    console.log(`${COLORS.cyan}${createLine(terminalWidth, '═')}${COLORS.reset}\n`);
+
+    // Summary Section with responsive width
     console.log(`${COLORS.bright}${COLORS.yellow}📊 SUMMARY STATISTICS${COLORS.reset}`);
-    console.log(`${COLORS.cyan}┌─────────────────────────────────────────────────────────────────────────────────────────────────┐${COLORS.reset}`);
-    console.log(`${COLORS.cyan}│${COLORS.reset} ${COLORS.bright}Total Tasks Processed:${COLORS.reset} ${COLORS.white}${summary.totalTasks.toString().padEnd(4)}${COLORS.reset} ${COLORS.cyan}│${COLORS.reset}`);
-    console.log(`${COLORS.cyan}│${COLORS.reset} ${COLORS.green}Successfully Completed:${COLORS.reset} ${COLORS.white}${summary.successfulTasks.toString().padEnd(4)}${COLORS.reset} ${COLORS.cyan}│${COLORS.reset}`);
-    console.log(`${COLORS.cyan}│${COLORS.reset} ${COLORS.red}Failed Tasks:${COLORS.reset}         ${COLORS.white}${summary.failedTasks.toString().padEnd(4)}${COLORS.reset} ${COLORS.cyan}│${COLORS.reset}`);
-    console.log(`${COLORS.cyan}│${COLORS.reset} ${COLORS.yellow}Success Rate:${COLORS.reset}           ${COLORS.white}${successRate}%${' '.padEnd(4)}${COLORS.reset} ${COLORS.cyan}│${COLORS.reset}`);
-    console.log(`${COLORS.cyan}└─────────────────────────────────────────────────────────────────────────────────────────────────┘${COLORS.reset}\n`);
+    console.log(`${COLORS.cyan}${createBoxTop(terminalWidth)}${COLORS.reset}`);
+    console.log(`${COLORS.cyan}${createBoxRow(terminalWidth, `${COLORS.bright}Total Tasks Processed: ${COLORS.white}${summary.totalTasks}`, 2, 2)}${COLORS.reset}`);
+    console.log(`${COLORS.cyan}${createBoxRow(terminalWidth, `${COLORS.green}Successfully Completed: ${COLORS.white}${summary.successfulTasks}`, 2, 2)}${COLORS.reset}`);
+    console.log(`${COLORS.cyan}${createBoxRow(terminalWidth, `${COLORS.red}Failed Tasks: ${COLORS.white}${summary.failedTasks}`, 2, 2)}${COLORS.reset}`);
+    console.log(`${COLORS.cyan}${createBoxRow(terminalWidth, `${COLORS.yellow}Success Rate: ${COLORS.white}${successRate}%`, 2, 2)}${COLORS.reset}`);
+    console.log(`${COLORS.cyan}${createBoxBottom(terminalWidth)}${COLORS.reset}\n`);
 
-    // Original git info
+    // Get repository URL information
+    const getGitUrl = (): string => {
+      try {
+        // Try to get the remote origin URL (HTTPS or SSH)
+        const originUrl = execSync('git config --get remote.origin.url', {
+          cwd: this.gitRepoPath,
+          encoding: 'utf8'
+        }).trim();
+
+        if (originUrl) {
+          return originUrl;
+        }
+
+        // If no origin, try to get current branch remote URL
+        const currentBranch = execSync('git rev-parse --abbrev-ref HEAD', {
+          cwd: this.gitRepoPath,
+          encoding: 'utf8'
+        }).trim();
+
+        if (currentBranch && currentBranch !== 'HEAD') {
+          try {
+            const remoteName = execSync(`git config --get branch.${currentBranch}.remote`, {
+              cwd: this.gitRepoPath,
+              encoding: 'utf8'
+            }).trim();
+
+            if (remoteName) {
+              const remoteUrl = execSync(`git config --get remote.${remoteName}.url`, {
+                cwd: this.gitRepoPath,
+                encoding: 'utf8'
+              }).trim();
+              if (remoteUrl) {
+                return remoteUrl;
+              }
+            }
+          } catch {
+            // Continue to next method
+          }
+        }
+
+        // Fallback: try to construct URL from git config
+        const remoteUrl = execSync('git remote get-url origin 2>/dev/null || echo ""', {
+          cwd: this.gitRepoPath,
+          encoding: 'utf8'
+        }).trim();
+
+        return remoteUrl || 'Local repository';
+      } catch (error) {
+        return 'Local repository';
+      }
+    };
+
+    // Get current branch name
+    const getCurrentBranch = (): string => {
+      try {
+        return execSync('git rev-parse --abbrev-ref HEAD', {
+          cwd: this.gitRepoPath,
+          encoding: 'utf8'
+        }).trim();
+      } catch {
+        return 'Unknown';
+      }
+    };
+
+    const gitUrl = getGitUrl();
+    const currentBranch = getCurrentBranch();
+
+    // Original git info with responsive width
     console.log(`${COLORS.bright}${COLORS.blue}🌳 GIT REPOSITORY INFO${COLORS.reset}`);
-    console.log(`${COLORS.cyan}┌─────────────────────────────────────────────────────────────────────────────────────────────────┐${COLORS.reset}`);
-    console.log(`${COLORS.cyan}│${COLORS.reset} ${COLORS.bright}Original Commit Hash:${COLORS.reset} ${COLORS.magenta}${this.originalGitNode}${COLORS.reset}`);
-    if (this.stashedChanges) {
-      console.log(`${COLORS.cyan}│${COLORS.reset} ${COLORS.yellow}⚠️  Stashed changes were restored${COLORS.reset}`);
-    }
-    console.log(`${COLORS.cyan}└─────────────────────────────────────────────────────────────────────────────────────────────────┘${COLORS.reset}\n`);
+    console.log(`${COLORS.cyan}${createBoxTop(terminalWidth)}${COLORS.reset}`);
+    console.log(`${COLORS.cyan}${createBoxRow(terminalWidth, `${COLORS.bright}Original Commit Hash: ${COLORS.magenta}${this.originalGitNode}`, 2, 2)}${COLORS.reset}`);
+    console.log(`${COLORS.cyan}${createBoxRow(terminalWidth, `${COLORS.bright}Current Branch: ${COLORS.green}${currentBranch}`, 2, 2)}${COLORS.reset}`);
 
-    // Task details section
+    // Format the git URL nicely
+    let urlDisplay = gitUrl;
+    let urlType = 'URL';
+    if (gitUrl.startsWith('git@')) {
+      urlType = 'SSH URL';
+      // Extract username/reponame from SSH URL for cleaner display
+      const match = gitUrl.match(/git@[^:]+:(.+)\.git$/);
+      if (match) {
+        urlDisplay = match[1];
+      }
+    } else if (gitUrl.startsWith('https://')) {
+      urlType = 'HTTPS URL';
+      // Extract username/reponame from HTTPS URL for cleaner display
+      const match = gitUrl.match(/https:\/\/[^\/]+\/(.+)\.git$/);
+      if (match) {
+        urlDisplay = match[1];
+      }
+    } else if (gitUrl === 'Local repository') {
+      urlType = 'Repository';
+      urlDisplay = gitUrl;
+    }
+
+    console.log(`${COLORS.cyan}${createBoxRow(terminalWidth, `${COLORS.bright}${urlType}: ${COLORS.cyan}${urlDisplay}`, 2, 2)}${COLORS.reset}`);
+
+    if (this.stashedChanges) {
+      console.log(`${COLORS.cyan}${createBoxRow(terminalWidth, `${COLORS.yellow}⚠️  Stashed changes were restored`, 2, 2)}${COLORS.reset}`);
+    }
+    console.log(`${COLORS.cyan}${createBoxBottom(terminalWidth)}${COLORS.reset}\n`);
+
+    // Task details section with responsive width
     console.log(`${COLORS.bright}${COLORS.magenta}📋 TASK DETAILS${COLORS.reset}`);
-    console.log(`${COLORS.cyan}══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════${COLORS.reset}`);
+    console.log(`${COLORS.cyan}${createLine(terminalWidth, '═')}${COLORS.reset}`);
 
     summary.results.forEach((result, index) => {
       const task = this.taskResults.find(t => t.ID === result.taskId);
@@ -579,21 +698,69 @@ ${backupBranch ? `Backup branch created: ${backupBranch}` : ''}`;
         `${COLORS.bgGreen}${COLORS.white} ✓ SUCCESS ${COLORS.reset}` :
         `${COLORS.bgRed}${COLORS.white} ✗ FAILED ${COLORS.reset}`;
 
-      console.log(`\n${COLORS.bright}${COLORS.yellow}Task ${index + 1}/${summary.totalTasks}: ${result.taskTitle}${COLORS.reset}`);
+      // Task title with responsive width
+      const titlePrefix = `Task ${index + 1}/${summary.totalTasks}: `;
+      const maxTitleWidth = terminalWidth - titlePrefix.length - 1;
+      const displayTitle = result.taskTitle.length > maxTitleWidth
+        ? result.taskTitle.substring(0, maxTitleWidth - 3) + '...'
+        : result.taskTitle;
+
+      console.log(`\n${COLORS.bright}${COLORS.yellow}${titlePrefix}${displayTitle}${COLORS.reset}`);
       console.log(`${COLORS.cyan}├─ 🆔 Task ID:${COLORS.reset} ${COLORS.white}${result.taskId}${COLORS.reset}`);
       console.log(`${COLORS.cyan}├─ 📊 Status:${COLORS.reset} ${status}`);
 
       if (result.success && result.branchName) {
         const commitHash = commitHashes.get(result.taskId) || 'N/A';
-        console.log(`${COLORS.cyan}├─ 🌿 Branch:${COLORS.reset} ${COLORS.green}${result.branchName}${COLORS.reset}`);
+        const maxBranchWidth = terminalWidth - 12; // "├─ 🌿 Branch: ".length
+        const displayBranch = result.branchName.length > maxBranchWidth
+          ? result.branchName.substring(0, maxBranchWidth - 3) + '...'
+          : result.branchName;
+
+        console.log(`${COLORS.cyan}├─ 🌿 Branch:${COLORS.reset} ${COLORS.green}${displayBranch}${COLORS.reset}`);
         console.log(`${COLORS.cyan}├─ 🔗 Commit Hash:${COLORS.reset} ${COLORS.magenta}${commitHash}${COLORS.reset}`);
       }
 
       if (task) {
-        console.log(`${COLORS.cyan}├─ 📝 Description:${COLORS.reset} ${COLORS.dim}${task.description || 'No description provided'}${COLORS.reset}`);
-        if (task.report) {
-          console.log(`${COLORS.cyan}├─ 📄 Report:${COLORS.reset} ${COLORS.dim}${task.report}${COLORS.reset}`);
+        // Responsive description wrapping
+        if (task.description) {
+          const descriptionPrefix = '├─ 📝 Description: ';
+          const maxDescWidth = terminalWidth - descriptionPrefix.length - 2;
+          const words = (task.description || 'No description provided').split(' ');
+          let currentLine = `${COLORS.cyan}${descriptionPrefix}${COLORS.dim}`;
+
+          words.forEach((word, i) => {
+            if ((currentLine.length - descriptionPrefix.length - 10 + word.length + 1) <= maxDescWidth) {
+              currentLine += (i === 0 ? '' : ' ') + word;
+            } else {
+              console.log(`${currentLine}${COLORS.reset}`);
+              currentLine = `${COLORS.cyan}${' '.repeat(descriptionPrefix.length - 2)}├─ ${COLORS.dim}${word}`;
+            }
+          });
+          if (currentLine) {
+            console.log(`${currentLine}${COLORS.reset}`);
+          }
         }
+
+        // Responsive report wrapping
+        if (task.report) {
+          const reportPrefix = '├─ 📄 Report: ';
+          const maxReportWidth = terminalWidth - reportPrefix.length - 2;
+          const words = task.report.split(' ');
+          let currentLine = `${COLORS.cyan}${reportPrefix}${COLORS.dim}`;
+
+          words.forEach((word, i) => {
+            if ((currentLine.length - reportPrefix.length - 10 + word.length + 1) <= maxReportWidth) {
+              currentLine += (i === 0 ? '' : ' ') + word;
+            } else {
+              console.log(`${currentLine}${COLORS.reset}`);
+              currentLine = `${COLORS.cyan}${' '.repeat(reportPrefix.length - 2)}├─ ${COLORS.dim}${word}`;
+            }
+          });
+          if (currentLine) {
+            console.log(`${currentLine}${COLORS.reset}`);
+          }
+        }
+
         if (task.completedAt) {
           const completionTime = new Date(task.completedAt).toLocaleString();
           console.log(`${COLORS.cyan}├─ ⏰ Completed:${COLORS.reset} ${COLORS.blue}${completionTime}${COLORS.reset}`);
@@ -601,25 +768,69 @@ ${backupBranch ? `Backup branch created: ${backupBranch}` : ''}`;
       }
 
       if (result.error) {
-        console.log(`${COLORS.cyan}├─ ❌ Error:${COLORS.reset} ${COLORS.red}${result.error}${COLORS.reset}`);
+        // Responsive error message wrapping
+        const errorPrefix = '├─ ❌ Error: ';
+        const maxErrorWidth = terminalWidth - errorPrefix.length - 2;
+        const words = result.error.split(' ');
+        let currentLine = `${COLORS.cyan}${errorPrefix}${COLORS.red}`;
+
+        words.forEach((word, i) => {
+          if ((currentLine.length - errorPrefix.length - 10 + word.length + 1) <= maxErrorWidth) {
+            currentLine += (i === 0 ? '' : ' ') + word;
+          } else {
+            console.log(`${currentLine}${COLORS.reset}`);
+            currentLine = `${COLORS.cyan}${' '.repeat(errorPrefix.length - 2)}├─ ${COLORS.red}${word}`;
+          }
+        });
+        if (currentLine) {
+          console.log(`${currentLine}${COLORS.reset}`);
+        }
       }
 
       console.log(`${COLORS.cyan}└─ ${result.success ? '✅ All changes committed successfully!' : '⚠️  Task failed to complete'}${COLORS.reset}`);
     });
 
-    // Final footer
-    console.log(`\n${COLORS.cyan}══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════${COLORS.reset}`);
+    // Final footer with responsive width
+    console.log(`\n${COLORS.cyan}${createLine(terminalWidth, '═')}${COLORS.reset}`);
 
     if (summary.failedTasks === 0) {
-      console.log(`${COLORS.bgGreen}${COLORS.white}${COLORS.bright}🎉 ALL TASKS COMPLETED SUCCESSFULLY! 🎉${COLORS.reset}`);
-      console.log(`${COLORS.green}   Every task was processed and committed successfully.${COLORS.reset}`);
+      const successMessage = '🎉 ALL TASKS COMPLETED SUCCESSFULLY! 🎉';
+      const successPadding = Math.max(0, (terminalWidth - successMessage.length) / 2);
+      const centeredSuccess = `${' '.repeat(Math.floor(successPadding))}${successMessage}${' '.repeat(Math.ceil(successPadding))}`;
+
+      console.log(`${COLORS.bgGreen}${COLORS.white}${COLORS.bright}${centeredSuccess}${COLORS.reset}`);
+
+      const detailMessage = 'Every task was processed and committed successfully.';
+      const detailPadding = Math.max(0, (terminalWidth - detailMessage.length) / 2);
+      const centeredDetail = `${' '.repeat(Math.floor(detailPadding))}${detailMessage}${' '.repeat(Math.ceil(detailPadding))}`;
+
+      console.log(`${COLORS.green}${centeredDetail}${COLORS.reset}`);
     } else {
-      console.log(`${COLORS.bgYellow}${COLORS.white}${COLORS.bright}⚠️  ${summary.failedTasks} TASK(S) FAILED ⚠️${COLORS.reset}`);
-      console.log(`${COLORS.yellow}   Some tasks encountered errors. Please review the details above.${COLORS.reset}`);
+      const warningMessage = `⚠️  ${summary.failedTasks} TASK(S) FAILED ⚠️`;
+      const warningPadding = Math.max(0, (terminalWidth - warningMessage.length) / 2);
+      const centeredWarning = `${' '.repeat(Math.floor(warningPadding))}${warningMessage}${' '.repeat(Math.ceil(warningPadding))}`;
+
+      console.log(`${COLORS.bgYellow}${COLORS.white}${COLORS.bright}${centeredWarning}${COLORS.reset}`);
+
+      const detailMessage = 'Some tasks encountered errors. Please review the details above.';
+      const detailPadding = Math.max(0, (terminalWidth - detailMessage.length) / 2);
+      const centeredDetail = `${' '.repeat(Math.floor(detailPadding))}${detailMessage}${' '.repeat(Math.ceil(detailPadding))}`;
+
+      console.log(`${COLORS.yellow}${centeredDetail}${COLORS.reset}`);
     }
 
-    console.log(`\n${COLORS.dim}Generated on ${new Date().toLocaleString()}${COLORS.reset}`);
-    console.log(`${COLORS.blue}💼 Thank you for using Full Self Coding! 💼${COLORS.reset}\n`);
+    const timestamp = new Date().toLocaleString();
+    const timeMessage = `Generated on ${timestamp}`;
+    const timePadding = Math.max(0, (terminalWidth - timeMessage.length) / 2);
+    const centeredTime = `${' '.repeat(Math.floor(timePadding))}${timeMessage}${' '.repeat(Math.ceil(timePadding))}`;
+
+    console.log(`\n${COLORS.dim}${centeredTime}${COLORS.reset}`);
+
+    const footerMessage = '💼 Thank you for using Full Self Coding! 💼';
+    const footerPadding = Math.max(0, (terminalWidth - footerMessage.length) / 2);
+    const centeredFooter = `${' '.repeat(Math.floor(footerPadding))}${footerMessage}${' '.repeat(Math.ceil(footerPadding))}`;
+
+    console.log(`${COLORS.blue}${centeredFooter}${COLORS.reset}\n`);
   }
 
   /**
