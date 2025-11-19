@@ -1,6 +1,6 @@
 # Full Self Coding (FSC)
 
-An advanced AI-powered automated software engineering framework that leverages containerized agents to analyze, modify, and improve codebases autonomously.
+No prompts, no instructions, no plans, you have 100~1000 AI agent coding in parallel now, solving all possible problems and issues in your codebase.
 
 ## 🌟 Overview
 
