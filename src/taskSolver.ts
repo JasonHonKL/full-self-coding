@@ -69,6 +69,9 @@ export class TaskSolver {
           console.warn(`Git config file not found at ${gitConfigPath}, skipping git config copy`);
       }
 
+      // 0.4.4 remove the ~/.ssh/config from the docker container if it exists
+      await this.dockerInstance.runCommands(['rm -f /root/.ssh/config']);
+
 
       // first get the task prompt and save/copy to the docker container
       const taskPrompt = taskSolverPrompt(this.task, this.config);

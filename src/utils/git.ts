@@ -5,7 +5,20 @@ function streamToTextSync(stream: Uint8Array | null | undefined): string {
     return new TextDecoder().decode(stream);
 }
 
-export async function getGitRemoteUrls(): Promise<{ fetchUrl?: string; pushUrl?: string }> {
+/**
+ * Get the fetch and push URLs of the 'origin' remote.
+ * If useSSHInsteadOfHTTPS is true, it will return ssh URLs.
+ * If useSSHInsteadOfHTTPS is false, it will return https URLs.
+ * 
+ * @param useSSHInsteadOfHTTPS Whether to use ssh URLs instead of https URLs.
+ * @returns An object containing the fetchUrl and pushUrl.  
+ * 
+ * Here is an example:
+ * Github in URL: https://github.com/user/repo.git
+ * SSH URL: git@github.com:user/repo.git
+ */
+
+export async function getGitRemoteUrls(useSSHInsteadOfHTTPS: boolean = false): Promise<{ fetchUrl?: string; pushUrl?: string }> {
 
     try {
         const gitRemoteResult = spawnSync(["git", "remote", "-v"]);
@@ -34,6 +47,13 @@ export async function getGitRemoteUrls(): Promise<{ fetchUrl?: string; pushUrl?:
         }
         if (!fetchUrl && !pushUrl) {
             console.warn("No git remote 'origin' found.");
+        }
+
+        if (useSSHInsteadOfHTTPS && fetchUrl && fetchUrl.startsWith('https://github.com/')) {
+            fetchUrl = fetchUrl.replace('https://github.com/', 'git@github.com:');
+        }
+        if (useSSHInsteadOfHTTPS && pushUrl && pushUrl.startsWith('https://github.com/')) {
+            pushUrl = pushUrl.replace('https://github.com/', 'git@github.com:');
         }
 
         return { fetchUrl, pushUrl };

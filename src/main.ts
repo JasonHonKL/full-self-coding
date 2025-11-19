@@ -60,7 +60,7 @@ export async function main(): Promise<void> {
 
     let gitRemoteUrl: string;
     try {
-        const { fetchUrl } = await getGitRemoteUrls();
+        const { fetchUrl } = await getGitRemoteUrls(config.useGithubSSH);
         gitRemoteUrl = fetchUrl || ''; // Use fetchUrl, or empty string if not found
         //console.log(`fetchUrl: ${fetchUrl}`);
         if (!gitRemoteUrl) {

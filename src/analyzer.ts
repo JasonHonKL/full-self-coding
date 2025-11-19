@@ -72,6 +72,9 @@ export async function analyzeCodebase(
             console.warn(`Git config file not found at ${gitConfigPath}, skipping git config copy`);
         }
 
+        // 0.4.4 remove the ~/.ssh/config from the docker container if it exists
+        await docker.runCommands(['rm -f /root/.ssh/config']);
+
 
         // 1. Clone the source code repository
         allCommands.push(`git clone ${gitRemoteUrl} /app/repo`);

@@ -133,6 +133,14 @@ export interface Config {
      * that user want to send to the agent
      */
     customizedMessage?: string;
+
+    /**
+     * use Github ssh instead of https.
+     * If you want to access to your private repositories, 
+     * you must set this to true, and have set up ssh keys for Github.
+     * This is the only way to access and git clone your private repositories.
+     */
+    useGithubSSH?: boolean;
 }
 
 /**
