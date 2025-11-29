@@ -1,0 +1,49 @@
+{
+  "name": "@full-self-coding/core",
+  "version": "1.0.1",
+  "description": "Core library for automated code analysis and task execution",
+  "main": "src/index.ts",
+  "type": "module",
+  "types": "src/index.ts",
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "test": "bun test"
+  },
+  "keywords": [
+    "code-analysis",
+    "automation",
+    "task-execution",
+    "ai",
+    "coding"
+  ],
+  "author": "Full Self Coding",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/full-self-coding.git",
+    "directory": "packages/core"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "toml": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -11,7 +11,7 @@ import {
   CodeCommitter,
   getYYMMDDHHMMSS,
   type Task
-} from '../core';
+} from '@full-self-coding/core';
 import fs from 'fs';
 
 // Global configuration accessible throughout the application
@@ -144,3 +144,8 @@ export function createCLI(): Command {
 
 // Export for use as a library
 export { runFullAnalysis as main };
+
+// Run the CLI if this file is executed directly
+if (import.meta.main) {
+  createCLI().parse();
+}

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { spawnSync } from "bun";
-import { DockerInstance } from "../src/core/dockerInstance";
+import { DockerInstance } from "../src/dockerInstance";
 
 test("DockerInstance copyFilesToContainer basic functionality", async () => {
     const instance = new DockerInstance();

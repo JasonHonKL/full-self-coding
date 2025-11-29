@@ -1,6 +1,6 @@
 
 import { expect, test } from "bun:test";
-import { DockerInstance } from "../src/core/dockerInstance";
+import { DockerInstance } from "../src/dockerInstance";
 
 test("DockerInstance creates a file, copies it from the container, and reads the content", async () => {
     const instance = new DockerInstance();
