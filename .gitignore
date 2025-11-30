@@ -183,3 +183,4 @@ test/apiKeySetup.ts
 ./.claude
 .claude/
 .fsc/
+./core/test/apiKeySetup.ts
